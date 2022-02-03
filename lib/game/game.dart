@@ -1,9 +1,11 @@
 import 'dart:math';
 
+import 'package:first_game/game/audio_player_component.dart';
 import 'package:first_game/game/command.dart';
 import 'package:first_game/game/enemy_manager.dart';
 import 'package:first_game/game/knows_game_size.dart';
 import 'package:first_game/game/power_up.dart';
+import 'package:first_game/game/power_up_manager.dart';
 import 'package:first_game/models/player_data.dart';
 import 'package:first_game/models/spaceship_details.dart';
 import 'package:first_game/widgets/overlays/game_over.dart';
@@ -13,6 +15,7 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flame/palette.dart';
+import 'package:flame/parallax.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +27,7 @@ class SpaceShooterGame extends FlameGame
     with HasCollidables, HasDraggables, HasTappables {
   // late Player player;
   late EnemyManager _enemyManager;
+  late PowerUpManager _powerUpManager;
   late SpriteSheet spriteSheet;
   late SpriteSheet myPlane;
 
@@ -37,6 +41,8 @@ class SpaceShooterGame extends FlameGame
   final _addLaterCommandList = List<Command>.empty(growable: true);
 
   bool _isAlreadyLoaded = false;
+
+  late AudioPlayerComponent _audioPlayerComponent;
 
   @override
   Future<void>? onLoad() async {
@@ -52,11 +58,28 @@ class SpaceShooterGame extends FlameGame
       spriteSheet = SpriteSheet.fromColumnsAndRows(
           image: images.fromCache('simple_space.png'), columns: 8, rows: 6);
 
-      final knobPaint = BasicPalette.blue.withAlpha(200).paint();
-      final backgroundPaint = BasicPalette.blue.withAlpha(100).paint();
+      final knobPaint = BasicPalette.white.withAlpha(200).paint();
+      final backgroundPaint = BasicPalette.white.withAlpha(100).paint();
 
       _enemyManager = EnemyManager(spriteSheet: spriteSheet);
       add(_enemyManager);
+
+      _powerUpManager = PowerUpManager();
+      add(_powerUpManager);
+
+      _audioPlayerComponent = AudioPlayerComponent();
+      add(_audioPlayerComponent);
+
+      ParallaxComponent _stars = await ParallaxComponent.load([
+        ParallaxImageData('stars1.png'),
+        ParallaxImageData('stars2.png'),
+      ],
+      repeat: ImageRepeat.repeat,
+        baseVelocity: Vector2(0, -50),
+        velocityMultiplierDelta: Vector2(0, 1.5)
+      );
+
+      add(_stars);
 
       joystick = JoystickComponent(
           knob: CircleComponent(radius: 20, paint: knobPaint),
@@ -67,7 +90,7 @@ class SpaceShooterGame extends FlameGame
       final spaceType = SpaceshipType.Canary;
       final spaceShip = Spaceship.getSpaceshipByType(spaceType);
 
-         _player = Player(
+      _player = Player(
           joystick: joystick,
           sprite: spriteSheet.getSpriteById(spaceShip.spriteId),
           spaceshipType: spaceType);
@@ -101,18 +124,6 @@ class SpaceShooterGame extends FlameGame
           textRenderer: regular,
           anchor: Anchor.topRight);
       add(playerHealth);
-      final nuke =
-          Nuke(position: (size / 2) + Vector2(0, 150), size: Vector2(64, 64));
-      add(nuke);
-      final health = Health(
-          position: (size / 2) + Vector2(0, -150), size: Vector2(64, 64));
-      add(health);
-      final freeze = Freeze(
-          position: (size / 2) + Vector2(100, 100), size: Vector2(64, 64));
-      add(freeze);
-      final multiFire = MultiFire(
-          position: (size / 2) + Vector2(-100, 100), size: Vector2(64, 64));
-      add(multiFire);
       _isAlreadyLoaded = true;
     }
   }
@@ -124,7 +135,15 @@ class SpaceShooterGame extends FlameGame
       final playerData = Provider.of<PlayerData>(buildContext!, listen: false);
       _player.setSpaceshipType(playerData.spaceshipType);
     }
+    _audioPlayerComponent.playBgm( '9. Space Invaders.wav');
     super.onAttach();
+  }
+
+
+  @override
+  void onDetach() {
+    _audioPlayerComponent.stopBgm();
+    super.onDetach();
   }
 
   @override
@@ -192,20 +211,23 @@ class SpaceShooterGame extends FlameGame
     if (_player.getIsShootMultipleBullets()) {
       for (int i = -1; i < 2; i += 2) {
         Bullet bullet = Bullet(
-          sprite: spriteSheet.getSpriteById(28),
-          size: Vector2(64, 64),
-          position: _player.position.clone(),
-        );
+            sprite: spriteSheet.getSpriteById(28),
+            size: Vector2(64, 64),
+            position: _player.position.clone(),
+            level: Spaceship.spaceships[_player.spaceshipType]?.level ?? Spaceship.spaceships.entries.first.value.level);
         bullet.direction.rotate(i * pi / 6);
         add(bullet);
       }
     }
     Bullet bullet = Bullet(
-      sprite: spriteSheet.getSpriteById(28),
-      size: Vector2(64, 64),
-      position: _player.position.clone(),
-    );
+        sprite: spriteSheet.getSpriteById(28),
+        size: Vector2(64, 64),
+        position: _player.position.clone(),
+        level: Spaceship.spaceships[_player.spaceshipType]?.level ?? Spaceship.spaceships.entries.first.value.level);
     add(bullet);
+    addCommand(Command<AudioPlayerComponent>(action: (audioPlayer) {
+      audioPlayer.playSfx('laserSmall_001.ogg');
+    }));
   }
 
   destroyAll() {
@@ -218,10 +240,14 @@ class SpaceShooterGame extends FlameGame
   void reset() {
     _player.reset();
     _enemyManager.reset();
+    _powerUpManager.reset();
     children.whereType<Enemy>().forEach((element) {
       element.removeFromParent();
     });
     children.whereType<Bullet>().forEach((element) {
+      element.removeFromParent();
+    });
+    children.whereType<PowerUp>().forEach((element) {
       element.removeFromParent();
     });
   }

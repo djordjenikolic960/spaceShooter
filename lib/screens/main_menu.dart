@@ -1,5 +1,6 @@
 import 'package:first_game/screens/game_play.dart';
 import 'package:first_game/screens/select_spaceship.dart';
+import 'package:first_game/screens/settings_menu.dart';
 import 'package:flutter/material.dart';
 
 class MainMenu extends StatelessWidget {
@@ -43,7 +44,9 @@ class MainMenu extends StatelessWidget {
               width: MediaQuery.of(context).size.width / 3,
               child: ElevatedButton(
                   onPressed: () {
-                    //navigate to options screen
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const SettingsMenu()),
+                    );
                   },
                   child: const Text('Options')),
             )

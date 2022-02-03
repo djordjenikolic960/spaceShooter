@@ -12,13 +12,11 @@ import 'knows_game_size.dart';
 
 class Player extends SpriteComponent
     with HasGameRef<SpaceShooterGame>, KnowsGameSize, HasHitboxes, Collidable {
-
-  int _score = 0;
   int _health = 100;
 
   int getHealth() => _health;
 
-  int getScore() => _score;
+  int getScore() => _pLayerData.currentScore;
 
   bool _isCollision = false;
 
@@ -81,7 +79,7 @@ class Player extends SpriteComponent
               speed: getRandomVector(),
               position: (position + Vector2(0, 25)),
               child: CircleParticle(
-                  paint: Paint()..color = Colors.redAccent,
+                  paint: Paint()..color = Colors.white60,
                   radius: 1,
                   lifespan: 1),
             )));
@@ -102,12 +100,13 @@ class Player extends SpriteComponent
   }
 
   void addToScore(int points) {
-    _score += points;
+    _pLayerData.currentScore += points;
     _pLayerData.money += points;
+    _pLayerData.save();
   }
 
   void reset() {
-    _score = 0;
+    _pLayerData.currentScore = 0;
     _health = 100;
     position = gameRef.size / 2;
   }

@@ -1,6 +1,7 @@
 import 'package:first_game/game/enemy_manager.dart';
 import 'package:first_game/game/game.dart';
 import 'package:first_game/game/player.dart';
+import 'package:first_game/game/power_up_manager.dart';
 import 'package:flame/components.dart';
 import 'package:flame/geometry.dart';
 
@@ -21,7 +22,7 @@ abstract class PowerUp extends SpriteComponent
     Sprite? sprite,
   }) : super(position: position, size: size, sprite: sprite) {
     _timer = Timer(3, onTick: () {
-     // remove(this);
+      removeFromParent();
     });
   }
 
@@ -44,7 +45,7 @@ abstract class PowerUp extends SpriteComponent
 
   @override
   void onMount() {
-   // _timer.start();
+    _timer.start();
     this.sprite = getSprite();
     super.onMount();
   }
@@ -115,6 +116,11 @@ class Freeze extends PowerUp {
       enemyManager.freeze();
     });
     gameRef.addCommand(commandManager);
+
+    final commandManager1 = Command<PowerUpManager>(action: (powerUpManager) {
+      powerUpManager.freeze();
+    });
+    gameRef.addCommand(commandManager1);
   }
 }
 

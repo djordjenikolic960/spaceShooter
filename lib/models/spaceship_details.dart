@@ -1,3 +1,7 @@
+import 'package:hive/hive.dart';
+
+part 'spaceship_details.g.dart';
+
 class Spaceship {
   final String name;
   final int cost;
@@ -6,14 +10,13 @@ class Spaceship {
   final String assetPath;
   final int level;
 
-  const Spaceship({
-    required this.name,
-    required this.cost,
-    required this.speed,
-    required this.spriteId,
-    required this.assetPath,
-    required this.level
-  });
+  const Spaceship(
+      {required this.name,
+      required this.cost,
+      required this.speed,
+      required this.spriteId,
+      required this.assetPath,
+      required this.level});
 
   static Spaceship getSpaceshipByType(SpaceshipType spaceshipType) {
     return spaceships[spaceshipType] ?? spaceships.entries.first.value;
@@ -85,16 +88,24 @@ class Spaceship {
       level: 4,
     )
   };
-
 }
 
+@HiveType(typeId: 1)
 enum SpaceshipType {
+  @HiveField(0)
   Canary,
+  @HiveField(1)
   Dusky,
+  @HiveField(2)
   Condor,
+  @HiveField(3)
   CXC,
+  @HiveField(4)
   Raptor,
+  @HiveField(5)
   RaptorX,
+  @HiveField(6)
   Albatross,
+  @HiveField(7)
   DK809
 }
